@@ -5,13 +5,6 @@ steps:
     args: ['install']
     id: 'install-dependencies'
 
-  # Run linter (optional - comment out if not needed)
-  - name: 'node:18'
-    entrypoint: 'npm'
-    args: ['run', 'lint']
-    id: 'lint'
-    waitFor: ['install-dependencies']
-
   # Build the project
   - name: 'node:18'
     entrypoint: 'npm'
@@ -21,31 +14,14 @@ steps:
     env:
       - 'NODE_ENV=production'
 
-  # Store build artifacts
-  - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['-m', 'cp', '-r', 'dist/*', 'gs://${_BUCKET_NAME}/']
-    id: 'deploy-to-storage'
-    waitFor: ['build']
-
-# Substitutions (set these in Cloud Build trigger or via gcloud)
-substitutions:
-  _BUCKET_NAME: 'your-bucket-name'  # Replace with your GCS bucket name
-
 # Build timeout
 timeout: '1200s'
 
 # Build options
 options:
-  machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
 
 # Images to be pushed to Container Registry (if needed)
 images: []
-
-# Artifacts (optional - for storing build outputs)
-artifacts:
-  objects:
-    location: 'gs://${_BUCKET_NAME}/artifacts/'
-    paths: ['dist']
 
 
