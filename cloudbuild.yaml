@@ -3,6 +3,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '--build-arg'
+      - 'VITE_API_BASE_URL=https://node-git-796530532940.asia-south1.run.app/api'
       - '-t'
       - 'gcr.io/${PROJECT_ID}/admin-git:$COMMIT_SHA'
       - '-t'
