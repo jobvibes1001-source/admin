@@ -19,6 +19,7 @@ COPY .env.production .env
 # Vite will use .env.production automatically when NODE_ENV=production
 ARG VITE_API_BASE_URL=https://node-git-796530532940.asia-south1.run.app/api
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV NODE_ENV=production
 
 RUN npm run build
 
