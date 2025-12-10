@@ -1,4 +1,19 @@
 steps:
+  # Create Artifact Registry repository if it doesn't exist (idempotent)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud artifacts repositories describe admin \
+          --location=asia-south1 \
+          --format="value(name)" || \
+        gcloud artifacts repositories create admin \
+          --repository-format=docker \
+          --location=asia-south1 \
+          --description="Docker repository for admin app"
+    id: 'create-repo'
+
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -9,6 +24,7 @@ steps:
       - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:latest'
       - '.'
     id: 'build-image'
+    waitFor: ['create-repo']
 
   # Push the Docker image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
