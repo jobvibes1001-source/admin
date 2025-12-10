@@ -32,13 +32,15 @@ steps:
     id: 'deploy-cloud-run'
     waitFor: ['build-image']
 
+# Logs bucket (required when service account is specified)
+logsBucket: 'gs://${PROJECT_ID}_cloudbuild'
+
 # Build timeout
 timeout: '1200s'
 
 # Build options
 options:
   logging: CLOUD_LOGGING_ONLY
-  default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET
 
 # Images to be pushed to Container Registry (automatic push)
 images:
