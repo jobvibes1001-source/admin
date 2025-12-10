@@ -32,15 +32,13 @@ steps:
     id: 'deploy-cloud-run'
     waitFor: ['build-image']
 
-# Logs bucket (create this bucket manually: gsutil mb -p jobvibes-d2cac -l asia-south1 gs://jobvibes-d2cac_cloudbuild)
-logsBucket: 'gs://${PROJECT_ID}_cloudbuild'
-
 # Build timeout
 timeout: '1200s'
 
 # Build options
 options:
-  logging: GCS_ONLY
+  logging: CLOUD_LOGGING_ONLY
+  defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
 
 # Images to be pushed to Container Registry (automatic push)
 images:
