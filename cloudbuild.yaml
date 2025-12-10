@@ -1,18 +1,42 @@
 steps:
-  # Install dependencies
-  - name: 'node:18'
-    entrypoint: 'npm'
-    args: ['install']
-    id: 'install-dependencies'
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:$COMMIT_SHA'
+      - '-t'
+      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:latest'
+      - '.'
+    id: 'build-image'
 
-  # Build the project
-  - name: 'node:18'
-    entrypoint: 'npm'
-    args: ['run', 'build']
-    id: 'build'
-    waitFor: ['install-dependencies']
-    env:
-      - 'NODE_ENV=production'
+  # Push the Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git'
+    id: 'push-image'
+    waitFor: ['build-image']
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'admin-git'
+      - '--image'
+      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:$COMMIT_SHA'
+      - '--region'
+      - 'asia-south1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+    id: 'deploy-cloud-run'
+    waitFor: ['push-image']
 
 # Build timeout
 timeout: '1200s'
@@ -21,7 +45,9 @@ timeout: '1200s'
 options:
   logging: CLOUD_LOGGING_ONLY
 
-# Images to be pushed to Container Registry (if needed)
-images: []
+# Images to be pushed to Container Registry
+images:
+  - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:$COMMIT_SHA'
+  - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:latest'
 
 
