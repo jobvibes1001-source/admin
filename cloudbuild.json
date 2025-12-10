@@ -1,0 +1,48 @@
+{
+  "steps": [
+    {
+      "name": "node:18",
+      "entrypoint": "npm",
+      "args": ["install"],
+      "id": "install-dependencies"
+    },
+    {
+      "name": "node:18",
+      "entrypoint": "npm",
+      "args": ["run", "lint"],
+      "id": "lint",
+      "waitFor": ["install-dependencies"]
+    },
+    {
+      "name": "node:18",
+      "entrypoint": "npm",
+      "args": ["run", "build"],
+      "id": "build",
+      "waitFor": ["install-dependencies"],
+      "env": ["NODE_ENV=production"]
+    },
+    {
+      "name": "gcr.io/cloud-builders/gsutil",
+      "args": ["-m", "cp", "-r", "dist/*", "gs://${_BUCKET_NAME}/"],
+      "id": "deploy-to-storage",
+      "waitFor": ["build"]
+    }
+  ],
+  "substitutions": {
+    "_BUCKET_NAME": "your-bucket-name"
+  },
+  "timeout": "1200s",
+  "options": {
+    "machineType": "N1_HIGHCPU_8",
+    "logging": "CLOUD_LOGGING_ONLY"
+  },
+  "images": [],
+  "artifacts": {
+    "objects": {
+      "location": "gs://${_BUCKET_NAME}/artifacts/",
+      "paths": ["dist"]
+    }
+  }
+}
+
+
