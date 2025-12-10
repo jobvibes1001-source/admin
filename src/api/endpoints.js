@@ -7,7 +7,7 @@
 
 // Base API configuration
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api";
+  import.meta.env.VITE_API_BASE_URL || "https://node-git-796530532940.asia-south1.run.app/api";
 
 // API endpoints object
 export const API_ENDPOINTS = {
