@@ -1,39 +1,17 @@
 steps:
-  # Create Artifact Registry repository if it doesn't exist (idempotent)
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        gcloud artifacts repositories describe admin \
-          --location=asia-south1 \
-          --format="value(name)" || \
-        gcloud artifacts repositories create admin \
-          --repository-format=docker \
-          --location=asia-south1 \
-          --description="Docker repository for admin app"
-    id: 'create-repo'
-
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:$COMMIT_SHA'
+      - 'gcr.io/${PROJECT_ID}/admin-git:$COMMIT_SHA'
       - '-t'
-      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:latest'
+      - 'gcr.io/${PROJECT_ID}/admin-git:latest'
       - '.'
     id: 'build-image'
-    waitFor: ['create-repo']
 
-  # Push the Docker image to Artifact Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - '--all-tags'
-      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git'
-    id: 'push-image'
-    waitFor: ['build-image']
+  # Push the Docker image to Container Registry (automatic with images: field)
+  # Images are automatically pushed when listed in the images: section below
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -43,7 +21,7 @@ steps:
       - 'deploy'
       - 'admin-git'
       - '--image'
-      - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:$COMMIT_SHA'
+      - 'gcr.io/${PROJECT_ID}/admin-git:$COMMIT_SHA'
       - '--region'
       - 'asia-south1'
       - '--platform'
@@ -52,7 +30,7 @@ steps:
       - '--port'
       - '8080'
     id: 'deploy-cloud-run'
-    waitFor: ['push-image']
+    waitFor: ['build-image']
 
 # Build timeout
 timeout: '1200s'
@@ -61,9 +39,9 @@ timeout: '1200s'
 options:
   logging: CLOUD_LOGGING_ONLY
 
-# Images to be pushed to Container Registry
+# Images to be pushed to Container Registry (automatic push)
 images:
-  - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:$COMMIT_SHA'
-  - 'asia-south1-docker.pkg.dev/${PROJECT_ID}/admin/admin-git:latest'
+  - 'gcr.io/${PROJECT_ID}/admin-git:$COMMIT_SHA'
+  - 'gcr.io/${PROJECT_ID}/admin-git:latest'
 
 
