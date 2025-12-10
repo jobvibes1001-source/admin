@@ -10,6 +10,15 @@ steps:
       - '.'
     id: 'build-image'
 
+  # Push the Docker image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'gcr.io/${PROJECT_ID}/admin-git'
+    id: 'push-image'
+    waitFor: ['build-image']
+
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -27,7 +36,7 @@ steps:
       - '--port'
       - '8080'
     id: 'deploy-cloud-run'
-    waitFor: ['build-image']
+    waitFor: ['push-image']
 
 # Build timeout
 timeout: '1200s'
