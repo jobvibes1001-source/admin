@@ -76,7 +76,23 @@ mkdir -p /var/cache/nginx/fastcgi_temp
 mkdir -p /var/cache/nginx/uwsgi_temp
 mkdir -p /var/cache/nginx/scgi_temp
 
+# Set proper permissions
+chown -R nginx:nginx /var/cache/nginx 2>/dev/null || true
+chown -R nginx:nginx /var/log/nginx 2>/dev/null || true
+
+# Verify nginx binary exists and is executable
+if [ ! -f /usr/sbin/nginx ]; then
+    echo "ERROR: nginx binary not found!"
+    exit 1
+fi
+
+echo "Starting nginx process..."
+echo "Nginx will listen on 0.0.0.0:${PORT}"
+echo "Process info:"
+ps aux | head -5 || true
+
 # Start nginx in foreground - this is critical for Cloud Run
 # Use exec to replace shell process with nginx
-exec nginx -g "daemon off;"
+# This ensures Cloud Run sees nginx as the main process
+exec /usr/sbin/nginx -g "daemon off;"
 

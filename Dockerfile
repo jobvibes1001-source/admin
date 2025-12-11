@@ -39,6 +39,6 @@ RUN chmod +x /docker-entrypoint.sh
 # Expose port 8080 (Cloud Run default, but will use PORT env var)
 EXPOSE 8080
 
-# Use CMD instead of ENTRYPOINT to allow Cloud Run to pass signals correctly
-CMD ["/docker-entrypoint.sh"]
+# Use CMD with sh to ensure script runs correctly
+CMD ["/bin/sh", "/docker-entrypoint.sh"]
 
