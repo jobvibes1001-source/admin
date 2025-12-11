@@ -12,8 +12,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Copy production environment file
-COPY .env.production .env
+# Note: Environment variables are set via ARG/ENV above
+# If .env.production exists, it will be included in the COPY . . above
 
 # Build the application with production environment
 # Vite will use .env.production automatically when NODE_ENV=production
@@ -29,13 +29,21 @@ FROM nginx:alpine
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy startup script
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+# Verify that index.html exists (build was successful)
+RUN test -f /usr/share/nginx/html/index.html || (echo "ERROR: index.html not found. Build may have failed." && exit 1)
 
-# Expose port 8080 (Cloud Run default, but will use PORT env var)
+# Copy nginx configuration (binds to 0.0.0.0:8080 for Cloud Run)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Remove default nginx config if it exists
+RUN rm -f /etc/nginx/conf.d/default.conf.bak 2>/dev/null || true
+
+# Test nginx configuration during build
+RUN nginx -t
+
+# Expose port 8080 (Cloud Run default)
 EXPOSE 8080
 
-# Use custom entrypoint script
-ENTRYPOINT ["/docker-entrypoint.sh"]
+# Start nginx in foreground mode
+CMD ["nginx", "-g", "daemon off;"]
 
