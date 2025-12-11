@@ -139,7 +139,7 @@ const Login = () => {
               >
                 <DashboardIcon sx={{ fontSize: 48, mb: 2 }} />
                 <Typography component="h1" variant="h4" fontWeight="bold">
-                  Welcome Back
+                  Welcome Back  
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
                   Sign in to access your dashboard

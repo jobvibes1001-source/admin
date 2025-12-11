@@ -20,7 +20,7 @@ src/api/
 Create a `.env` file in your project root:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3001/api
+VITE_API_BASE_URL=https://node-git-796530532940.asia-south1.run.app/api
 ```
 
 For production:
