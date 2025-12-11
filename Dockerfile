@@ -29,15 +29,13 @@ FROM nginx:alpine
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy startup script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
-# Test nginx configuration
-RUN nginx -t
-
-# Expose port 8080 (Cloud Run default)
+# Expose port 8080 (Cloud Run default, but will use PORT env var)
 EXPOSE 8080
 
-# Start nginx in foreground mode
-CMD ["nginx", "-g", "daemon off;"]
+# Use custom entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]
 
