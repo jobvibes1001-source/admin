@@ -1,19 +1,34 @@
 #!/bin/sh
-set -e
 
 # Get port from environment variable (Cloud Run sets this)
 PORT=${PORT:-8080}
 
+echo "========================================="
 echo "Starting nginx on port ${PORT}..."
+echo "========================================="
+
+# Verify files exist
+if [ ! -d /usr/share/nginx/html ]; then
+    echo "ERROR: /usr/share/nginx/html does not exist"
+    exit 1
+fi
+
+if [ ! -f /usr/share/nginx/html/index.html ]; then
+    echo "ERROR: index.html not found in /usr/share/nginx/html"
+    ls -la /usr/share/nginx/html/
+    exit 1
+fi
+
+echo "Content directory verified"
 
 # Remove any existing default config
 rm -f /etc/nginx/conf.d/default.conf
 
 # Generate nginx configuration with dynamic port
-# Using a quoted heredoc to preserve nginx variables, then substitute PORT
-cat > /etc/nginx/conf.d/default.conf <<'NGINX_TEMPLATE'
+echo "Generating nginx configuration for port ${PORT}..."
+cat > /etc/nginx/conf.d/default.conf <<EOF
 server {
-    listen 0.0.0.0:__PORT__;
+    listen 0.0.0.0:${PORT};
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
@@ -25,27 +40,43 @@ server {
     gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)\$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 }
-NGINX_TEMPLATE
-
-# Replace PORT placeholder (using sed with backup extension for Alpine compatibility)
-sed -i.bak "s/__PORT__/${PORT}/g" /etc/nginx/conf.d/default.conf
-rm -f /etc/nginx/conf.d/default.conf.bak
+EOF
 
 echo "Nginx configuration created:"
 cat /etc/nginx/conf.d/default.conf
 
-echo "Testing nginx configuration..."
-nginx -t
+# Verify port is in the config
+if ! grep -q "listen.*${PORT}" /etc/nginx/conf.d/default.conf; then
+    echo "ERROR: Port ${PORT} not found in nginx configuration!"
+    exit 1
+fi
 
-echo "Starting nginx on port ${PORT}..."
+echo "Testing nginx configuration..."
+if ! nginx -t; then
+    echo "ERROR: Nginx configuration test failed!"
+    exit 1
+fi
+
+echo "Nginx configuration is valid"
+echo "Starting nginx on 0.0.0.0:${PORT}..."
+
+# Ensure nginx can write to its directories
+mkdir -p /var/cache/nginx/client_temp
+mkdir -p /var/cache/nginx/proxy_temp
+mkdir -p /var/cache/nginx/fastcgi_temp
+mkdir -p /var/cache/nginx/uwsgi_temp
+mkdir -p /var/cache/nginx/scgi_temp
+
+# Start nginx in foreground - this is critical for Cloud Run
+# Use exec to replace shell process with nginx
 exec nginx -g "daemon off;"
 
