@@ -32,18 +32,13 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Verify that index.html exists (build was successful)
 RUN test -f /usr/share/nginx/html/index.html || (echo "ERROR: index.html not found. Build may have failed." && exit 1)
 
-# Copy nginx configuration (binds to 0.0.0.0:8080 for Cloud Run)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy startup script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
-# Remove default nginx config if it exists
-RUN rm -f /etc/nginx/conf.d/default.conf.bak 2>/dev/null || true
-
-# Test nginx configuration during build
-RUN nginx -t
-
-# Expose port 8080 (Cloud Run default)
+# Expose port 8080 (Cloud Run default, but will use PORT env var)
 EXPOSE 8080
 
-# Start nginx in foreground mode
-CMD ["nginx", "-g", "daemon off;"]
+# Use custom entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]
 

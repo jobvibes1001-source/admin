@@ -6,9 +6,12 @@ PORT=${PORT:-8080}
 
 echo "Starting nginx on port ${PORT}..."
 
+# Remove any existing default config
+rm -f /etc/nginx/conf.d/default.conf
+
 # Generate nginx configuration with dynamic port
-# Using awk for port substitution (more reliable in Alpine)
-cat > /tmp/nginx.conf.template <<'NGINX_EOF'
+# Using a quoted heredoc to preserve nginx variables, then substitute PORT
+cat > /etc/nginx/conf.d/default.conf <<'NGINX_TEMPLATE'
 server {
     listen 0.0.0.0:__PORT__;
     server_name _;
@@ -31,36 +34,18 @@ server {
         add_header Cache-Control "public, immutable";
     }
 }
-NGINX_EOF
+NGINX_TEMPLATE
 
-# Replace placeholder with actual port using awk (works in Alpine)
-awk -v port="${PORT}" '{gsub(/__PORT__/, port); print}' /tmp/nginx.conf.template > /etc/nginx/conf.d/default.conf
+# Replace PORT placeholder (using sed with backup extension for Alpine compatibility)
+sed -i.bak "s/__PORT__/${PORT}/g" /etc/nginx/conf.d/default.conf
+rm -f /etc/nginx/conf.d/default.conf.bak
 
-# Verify the configuration file was created
-if [ ! -f /etc/nginx/conf.d/default.conf ]; then
-    echo "ERROR: Failed to create nginx configuration file"
-    exit 1
-fi
+echo "Nginx configuration created:"
+cat /etc/nginx/conf.d/default.conf
 
-# Verify port was substituted
-if grep -q "__PORT__" /etc/nginx/conf.d/default.conf; then
-    echo "ERROR: Port placeholder was not replaced"
-    exit 1
-fi
-
-echo "Nginx configuration created successfully"
 echo "Testing nginx configuration..."
+nginx -t
 
-# Test nginx configuration
-if ! nginx -t; then
-    echo "ERROR: Nginx configuration test failed"
-    cat /etc/nginx/conf.d/default.conf
-    exit 1
-fi
-
-echo "Nginx configuration is valid"
-echo "Starting nginx on 0.0.0.0:${PORT}..."
-
-# Start nginx in foreground
+echo "Starting nginx on port ${PORT}..."
 exec nginx -g "daemon off;"
 
